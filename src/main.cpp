@@ -9,6 +9,7 @@ void platform_update_window();
 // LRESULT CALLBACK windows_window_callback();
 
 // // Windows layer
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -71,6 +72,7 @@ void platform_update_window(){
     }
     
 }
+#endif
 
 int main () {
     platform_create_window(1200, 720, "Celeste");
@@ -79,11 +81,11 @@ int main () {
    {
         platform_update_window();
 
-        SM_TRACE("beans has been cooked");
-        SM_WARN("beans has been cooked");
-        SM_ERROR("beans has been cooked");
+        // SM_TRACE("beans has been cooked");
+        // SM_WARN("beans has been cooked");
+        // SM_ERROR("beans has been cooked");
 
-        SM_ASSERT(false, "We done boi");
+        // SM_ASSERT(false, "We done boi");
    }
    
 }

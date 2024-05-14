@@ -1,6 +1,9 @@
 #pragma once
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
 
 // Defines
 #ifdef _WIN32
@@ -76,3 +79,160 @@ void _log(char* prefix, char* msg, TextColor textColor, Args... args){
       SM_ERROR("beans been cooked")     \
     }                                   \
 }                                       
+
+
+struct BumpAllocator {
+    size_t capacity;
+    size_t used;
+    char* memory;
+};
+
+BumpAllocator make_bump_allocator(size_t size) {
+  BumpAllocator ba = {};
+
+  ba.memory = (char*)malloc(size);
+  if(ba.memory) {
+    ba.capacity = size;
+    memset(ba.memory, 0, size);
+  }else{
+    SM_ASSERT(false, "Failed to allocate memory");
+  }
+  return ba;
+}
+
+char* bump_alloc(BumpAllocator* bumpAllocator, size_t size) {
+  char* result = nullptr;
+
+  size_t allingedSize = (size + 7) & ~ 7;
+  if(bumpAllocator->used + allingedSize <= bumpAllocator->capacity) {
+    result = bumpAllocator->memory + bumpAllocator->used;
+    bumpAllocator->used += allingedSize;
+  }else {
+    SM_ASSERT(false, "BumpAllocator is full");
+  }
+
+  return result;
+}
+
+
+// FILE I/O
+long long get_timestamp(char* file) {
+  struct stat fileStat = {};
+  stat(file, &fileStat);
+  return fileStat.st_mtime;
+}
+
+bool file_exist(char* filePath) {
+  SM_ASSERT(filePath, "No filePath supplied");
+
+  auto file = fopen(filePath, "rb");
+  if(!file) {
+    return false;
+  }
+
+  fclose(file);
+  return true;
+}
+
+long get_file_size(char* filePath) {
+  SM_ASSERT(filePath, "No filePath supplied");
+
+  long filesize = 0;
+
+  auto file = fopen(filePath, "rb");
+  if (!file) {
+    SM_ERROR("Cannot open file: %s", filePath);
+    return 0;
+  }
+
+  fseek(file, 0, SEEK_END);
+  filesize = ftell(file);
+  fseek(file, 0, SEEK_SET);
+
+  fclose(file);
+  return filesize;
+}
+
+char* read_file(char* filePath, int* fileSize, char* buffer) {
+  SM_ASSERT(filePath, "No filePath supplied");
+  SM_ASSERT(fileSize, "No fileSize supplied");
+
+  *fileSize = 0;
+  auto file = fopen(filePath, "rb");
+  if (!file) {
+    SM_ERROR("Cannot open file: %s", filePath);
+    return nullptr;
+  }
+
+  fseek(file, 0, SEEK_END);
+  *fileSize = ftell(file);
+  fseek(file, 0, SEEK_SET);
+
+  memset(buffer, 0, *fileSize + 1);
+  fread(buffer, sizeof(char), *fileSize, file);
+
+  fclose(file);
+
+  return buffer;
+}
+
+void write_file(char* filePath, char* buffer, int size) {
+  SM_ASSERT(filePath, "No filePath supplied");
+  SM_ASSERT(buffer,   "No buffer supplied");
+
+  auto file = fopen(filePath, "rb");
+  if (!file) {
+    SM_ERROR("Cannot open file: %s", filePath);
+    return;
+  }
+
+  fwrite(buffer, sizeof(char), size, file);
+  fclose(file);
+}
+
+char* read_file(char* filePath, int* fileSize, BumpAllocator* bmpAllocator) {
+  char* file = nullptr;
+  long fileSize2 = get_file_size(filePath);
+
+  if (fileSize2){
+    char* buffer = bump_alloc(bmpAllocator, fileSize2 + 1);
+
+    file = read_file(filePath, fileSize, buffer);
+  }
+
+  return file;
+}
+
+bool copy_file(char* fileName, char* outputName, char* buffer) {
+  
+  int fileSize = 0;
+  char* data = read_file(fileName, &fileSize, buffer);
+
+  auto outputFile = fopen(outputName, "wb");
+  if(!outputFile) {
+    SM_ERROR("Failed to open file %s ", outputFile);
+    return false;
+  }
+
+  int result = fwrite(data, sizeof(char), fileSize, outputFile);
+  if(!result){
+    SM_ERROR("Failed to open file %s ", outputFile);
+  }
+
+  fclose(outputFile);
+
+  return true;
+}
+
+bool copy_file(char* fileName, char* outputName, BumpAllocator* bmpAllocator) {
+  char* file = 0;
+  long fileSize2 = get_file_size(fileName);
+
+  if(fileSize2) {
+    char* buffer = bump_alloc(bmpAllocator, fileSize2 + 1);
+
+    return copy_file(fileName, outputName, buffer);
+  }
+
+  return false;
+}

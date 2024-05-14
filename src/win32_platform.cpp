@@ -9,6 +9,7 @@
 
 // // globals
 static HWND window;
+static HDC dc;
 
 // function implementations
 LRESULT CALLBACK windows_window_callback(HWND window, UINT msg, WPARAM wParam, LPARAM lParam){
@@ -18,6 +19,15 @@ LRESULT CALLBACK windows_window_callback(HWND window, UINT msg, WPARAM wParam, L
         case WM_CLOSE:{
             running = false;
             DestroyWindow(window);
+            break;
+        }
+
+        case WM_SIZE: {
+            RECT rect = {};
+            GetClientRect(window, &rect);
+            input.screenSizeX = rect.right - rect.left;
+            input.screenSizeY = rect.bottom - rect.top;
+            
             break;
         }
 
@@ -107,7 +117,7 @@ bool platform_create_window(int width, int height, char* title) {
             return false;
         }
 
-        HDC dc = GetDC(window);
+        dc = GetDC(window);
         const int pixelAttribs[] = {
             WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
             WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
@@ -177,4 +187,8 @@ void* platform_load_gl_function(char* fnName) {
     }
 
     return (void*)proc;
+}
+
+void platform_swap_buffers() {
+    SwapBuffers(dc);
 }

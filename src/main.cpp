@@ -1,78 +1,13 @@
 #include <iostream>
 #include "beans_lib.h"
+#include "platform.h"
 
-// // platform globals
-
-// platform functions
-bool platform_create_window(int width, int height, char* title);
-void platform_update_window();
-// LRESULT CALLBACK windows_window_callback();
-
-// // Windows layer
+//Windows layer
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
-
-// // globals
-bool running = true;
-static HWND window;
-
-// function implementations
-LRESULT CALLBACK windows_window_callback(HWND window, UINT msg, WPARAM wParam, LPARAM lParam){
-    LRESULT result = 0;
-
-    switch(msg) {
-        case WM_CLOSE:{
-            running = false;
-            DestroyWindow(window);
-            break;
-        }
-
-        default:{
-            result = DefWindowProcA(window, msg, wParam, lParam);
-            break;
-        }
-    }
-
-    return result;
-}
-bool platform_create_window(int width, int height, char* title) {
-    HINSTANCE instance = GetModuleHandleA(0);
-    
-
-    WNDCLASSA wc = {};
-    wc.hInstance = instance;
-    wc.hIcon = NULL;
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.lpszClassName = title;
-    wc.lpfnWndProc = windows_window_callback;
-    
-    if(!RegisterClassA(&wc)){
-        return false; 
-    }
-    
-    int dwstyle = WS_OVERLAPPEDWINDOW;
-    window = CreateWindowExA(0, title, title, dwstyle, 100, 100, width, height, NULL, NULL, instance, NULL);
-
-    if(window == NULL){
-        return false;
-    }
-    ShowWindow(window, SW_SHOW);
-    return true;
-}
-
-void platform_update_window(){
-    MSG msg;
-
-    while (PeekMessageA(&msg, window, 0, 0, PM_REMOVE))
-    {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-    
-}
+#include "win32_platform.cpp"
 #endif
+
+#include "gl_renderer.h"
 
 int main () {
     platform_create_window(1200, 720, "Celeste");
@@ -80,12 +15,6 @@ int main () {
    while (running)
    {
         platform_update_window();
-
-        // SM_TRACE("beans has been cooked");
-        // SM_WARN("beans has been cooked");
-        // SM_ERROR("beans has been cooked");
-
-        // SM_ASSERT(false, "We done boi");
    }
    
 }

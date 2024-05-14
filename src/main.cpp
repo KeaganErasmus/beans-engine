@@ -1,6 +1,8 @@
-#include <iostream>
 #include "beans_lib.h"
 #include "platform.h"
+
+#define APIENTRY
+#include "glcorearb.h"
 
 //Windows layer
 #ifdef _WIN32

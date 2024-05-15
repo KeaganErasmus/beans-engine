@@ -3,17 +3,29 @@
 #include <glcorearb.h>
 #include "input.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+const char* TEXTURE_PATH = "assets/textures/texture_atlas.png";
+
 // Opengl Structs
 struct GLContext {
     GLuint programID;
+    GLuint textureID;
 };
 
 // opengl globals
 static GLContext glContext;
 
 // opengl Functions
-static void APIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id, 
-                                    GLenum severity, GLsizei length, const GLchar* message, const void* user) {
+static void APIENTRY gl_debug_callback(GLenum source, 
+                                        GLenum type, 
+                                        GLuint id, 
+                                        GLenum severity, 
+                                        GLsizei length, 
+                                        const GLchar* message, 
+                                        const void* user) 
+{
     if(severity == GL_DEBUG_SEVERITY_LOW ||
        severity == GL_DEBUG_SEVERITY_MEDIUM ||
        severity == GL_DEBUG_SEVERITY_HIGH) {
@@ -28,7 +40,7 @@ static void APIENTRY gl_debug_callback(GLenum source, GLenum type, GLuint id,
 bool gl_init(BumpAllocator* transientStorage) {
     load_gl_functions();
 
-    glDebugMessageCallback(&gl_debug_callback, nullptr);
+    glDebugMessageCallback((GLDEBUGPROC)&gl_debug_callback, nullptr);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glEnable(GL_DEBUG_OUTPUT);
 
@@ -84,6 +96,31 @@ bool gl_init(BumpAllocator* transientStorage) {
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
+    {
+        int width, height, channels;
+        char* data = (char*)stbi_load(TEXTURE_PATH, &width, &height, &channels, 4);
+        if(!data){
+            SM_ASSERT(false, "Could not load file %s ", TEXTURE_PATH);
+            return false;
+        }
+
+        glGenTextures(1, &glContext.textureID);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, glContext.textureID);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+        stbi_image_free(data);
+    }
+
+    glEnable(GL_FRAMEBUFFER_SRGB);
+    glEnable(0x809D); // Disable multisampling
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_GREATER);
 
@@ -92,7 +129,7 @@ bool gl_init(BumpAllocator* transientStorage) {
 }
 
 void gl_render() {
-    glClearColor(119.0f / 255.0f, 33.0f / 255.0f, 111.0f / 255.0f, 1.0f);
+    glClearColor(24.0f / 255.0f, 24 / 255.0f, 24 / 255.0f, 1.0f);
     glClearDepth(0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

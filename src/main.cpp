@@ -16,7 +16,7 @@
 
 int main () {
     BumpAllocator transientStorage = make_bump_allocator(MB(50));
-    platform_create_window(1200, 720, "Celeste");
+    platform_create_window(1200, 720, "Beans Engine");
 
     input.screenSizeX = 1200;
     input.screenSizeY = 720;

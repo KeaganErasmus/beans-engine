@@ -5,6 +5,8 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "render_interface.h"
+#include <glcorearb.h>
 
 const char* TEXTURE_PATH = "assets/textures/texture_atlas.png";
 
@@ -12,6 +14,8 @@ const char* TEXTURE_PATH = "assets/textures/texture_atlas.png";
 struct GLContext {
     GLuint programID;
     GLuint textureID;
+    GLuint transformSBOID;
+    GLuint screenSizeID;
 };
 
 // opengl globals
@@ -119,11 +123,23 @@ bool gl_init(BumpAllocator* transientStorage) {
         stbi_image_free(data);
     }
 
+    {
+        glGenBuffers(1, &glContext.transformSBOID);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glContext.transformSBOID);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Transform) * MAX_TRANSFORMS, renderData.transforms, GL_DYNAMIC_DRAW);
+    }
+
+    {
+        glContext.screenSizeID = glGetUniformLocation(glContext.programID, "screenSize");
+    }
+
     glEnable(GL_FRAMEBUFFER_SRGB);
     glEnable(0x809D); // Disable multisampling
+
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_GREATER);
 
+    glUseProgram(glContext.programID);
 
     return true;
 }
@@ -135,7 +151,14 @@ void gl_render() {
 
     glViewport(0, 0, input.screenSizeX, input.screenSizeY);
 
-    glUseProgram(glContext.programID);
+    Vec2 screenSize = {(float)input.screenSizeX, (float)input.screenSizeY};
+    glUniform2fv(glContext.screenSizeID, 1, &screenSize.x);
 
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    {
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Transform) * renderData.transformCount, renderData.transforms);
+
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderData.transformCount);
+
+        renderData.transformCount = 0;
+    }
 }

@@ -241,3 +241,16 @@ bool copy_file(char* fileName, char* outputName, BumpAllocator* bmpAllocator) {
 
   return false;
 }
+
+struct Vec2
+{
+  float x;
+  float y;
+};
+
+struct iVec2
+{
+  int x;
+  int y;
+};
+

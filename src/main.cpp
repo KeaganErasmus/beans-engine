@@ -1,5 +1,8 @@
 #include "beans_lib.h"
 #include "input.h"
+
+#include "game.cpp"
+
 #include "platform.h"
 
 #define APIENTRY
@@ -23,12 +26,12 @@ int main () {
 
     gl_init(&transientStorage);
 
-   while (running)
-   {
-        platform_update_window();
-        gl_render();
-        
-        platform_swap_buffers();
+   while (running) {
+     update_game();
+     platform_update_window();
+     gl_render();
+     
+     platform_swap_buffers();
    }
    
 }
